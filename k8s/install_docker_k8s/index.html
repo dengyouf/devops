@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://dengyouf.github.io/devops/k8s/install_docker_k8s/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>基于kubeadm安装kubernetes集群 - 运维文档</title>
+        <link href="../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../css/brands.min.css" rel="stylesheet">
+        <link href="../../css/solid.min.css" rel="stylesheet">
+        <link href="../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../..">运维文档</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../.." class="nav-link">主页</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle active" aria-current="page" role="button" data-bs-toggle="dropdown"  aria-expanded="false">云原生</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="./" class="dropdown-item active" aria-current="page">基于kubeadm安装kubernetes集群</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../.." class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" class="nav-link disabled">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/dengyouf/devops/edit/master/docs/k8s/install_docker_k8s.md" class="nav-link"><i class="fa-brands fa-github"></i> Edit on GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#kubeadm-kubernete" class="nav-link">Kubeadm 安装 Kubernete</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#_1" class="nav-link">一、准备虚拟机</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#_2" class="nav-link">二、安装集群</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#_3" class="nav-link">三、初始化集群</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#_4" class="nav-link">四、验证集群</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="kubeadm-kubernete">Kubeadm 安装 Kubernete<a class="headerlink" href="#kubeadm-kubernete" title="Permanent link">&para;</a></h1>
+<p>基于 Kubeadm 部署Kubernetes集群。操作系统为 Ubuntu 20.04 LTS，用到的各相关程序版本如下：</p>
+<ul>
+<li>kubernetes: v1.28.6</li>
+<li>docker: 20.10.22</li>
+<li>cri-dockerd: v0.3.8</li>
+<li>cni: flannel</li>
+</ul>
+<p><strong>环境说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>主机地址</th>
+<th>节点名称</th>
+<th>角色</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>192.168.122.11</td>
+<td>k8s-master01</td>
+<td>master</td>
+</tr>
+<tr>
+<td>192.168.122.21</td>
+<td>k8s-worker01</td>
+<td>worker</td>
+</tr>
+<tr>
+<td>192.168.122.22</td>
+<td>k8s-worker02</td>
+<td>worker</td>
+</tr>
+<tr>
+<td>192.168.122.23</td>
+<td>k8s-worker03</td>
+<td>worker</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_1">一、准备虚拟机<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<h3 id="11">1.1 初始化虚拟机<a class="headerlink" href="#11" title="Permanent link">&para;</a></h3>
+<ul>
+<li>允许root用户远程登陆</li>
+</ul>
+<pre><code>~# echo &quot;PermitRootLogin yes&quot; &gt;&gt; /etc/ssh/sshd_config
+~# systemctl  restart sshd
+~# passwd root
+</code></pre>
+<ul>
+<li>更新apt源为阿里源</li>
+</ul>
+<pre><code>cat &gt; /etc/apt/sources.list &lt;&lt;&quot;EOF&quot;
+deb https://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse
+deb-src https://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse
+
+deb https://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse
+deb-src https://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse
+
+deb https://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse
+deb-src https://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse
+
+# deb https://mirrors.aliyun.com/ubuntu/ focal-proposed main restricted universe multiverse
+# deb-src https://mirrors.aliyun.com/ubuntu/ focal-proposed main restricted universe multiverse
+
+deb https://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse
+deb-src https://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse
+EOF
+</code></pre>
+<ul>
+<li>关闭防火墙</li>
+</ul>
+<pre><code>~# ufw  disable
+</code></pre>
+<ul>
+<li>关闭swap分区</li>
+</ul>
+<pre><code>~# sed  -ri  's@/.*swap.*@# &amp;@' /etc/fstab &amp;&amp; swapoff -a
+</code></pre>
+<ul>
+<li>调整时区和时间同步</li>
+</ul>
+<pre><code>~# sudo cp /usr/share/zoneinfo/Asia/Shanghai  /etc/localtime
+~# date -R
+
+~# sudo apt update
+~# sudo apt install -y ntpdate
+~# /usr/sbin/ntpdate ntp.aliyun.com 2&amp;&gt;1 /dev/null
+
+~# crontab -l
+*/3 * * * * /usr/sbin/ntpdate ntp.aliyun.com 2&amp;&gt;1 /dev/null
+</code></pre>
+<ul>
+<li>打开内核转发</li>
+</ul>
+<pre><code>~# cat &gt; /etc/sysctl.d/k8s.conf &lt;&lt;EOF
+net.ipv4.ip_forward = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-arptables = 1
+net.ipv4.tcp_tw_reuse = 0
+net.core.somaxconn = 32768
+net.netfilter.nf_conntrack_max=1000000
+vm.swappiness = 0
+vm.max_map_count=655360
+fs.file-max=6553600
+EOF
+
+~# sysctl -p
+
+~# cat &gt;&gt; /etc/modules-load.d/k8s.conf &lt;&lt; &quot;EOF&quot;
+overlay
+br_netfilter
+EOF
+~# sudo modprobe overlay
+~# sudo modprobe br_netfilter
+</code></pre>
+<ul>
+<li>关机</li>
+</ul>
+<pre><code>~# init 0
+</code></pre>
+<h3 id="12">1.2. 克隆虚拟机<a class="headerlink" href="#12" title="Permanent link">&para;</a></h3>
+<ul>
+<li>查看模板虚拟机状态</li>
+</ul>
+<pre><code>~]# virsh  list --all
+ Id    Name                           State
+----------------------------------------------------
+ -     ubuntu20.04                    shut off
+</code></pre>
+<ul>
+<li>克隆虚拟机</li>
+</ul>
+<pre><code>~]# virt-clone --auto-clone -o ubuntu20.04 -n k8s-master01
+~]# virt-clone --auto-clone -o ubuntu20.04 -n k8s-worker01
+~]# virt-clone --auto-clone -o ubuntu20.04 -n k8s-worker02
+~]# virt-clone --auto-clone -o ubuntu20.04 -n k8s-worker03
+</code></pre>
+<ul>
+<li>修改主机IP地址和主机名</li>
+</ul>
+<pre><code>~]# virt-sysprep  \
+--operations defaults,machine-id,-ssh-userdir,-lvm-uuids \
+--hostname k8s-master01 \
+--run-command &quot;sed -i 's@192.168.122.7@192.168.122.11@g' /etc/netplan/00-installer-config.yaml &amp;&amp; dpkg-reconfigure openssh-server&quot; \
+-d k8s-master01
+~]# virt-sysprep  --operations defaults,machine-id,-ssh-userdir,-lvm-uuids \
+--hostname k8s-worker01 \
+--run-command &quot;sed -i 's@192.168.122.7@192.168.122.21@g' /etc/netplan/00-installer-config.yaml &amp;&amp; dpkg-reconfigure openssh-server&quot; \
+-d k8s-worker01
+~]# virt-sysprep  --operations defaults,machine-id,-ssh-userdir,-lvm-uuids \
+--hostname k8s-worker02 \
+--run-command &quot;sed -i 's@192.168.122.7@192.168.122.22@g' /etc/netplan/00-installer-config.yaml &amp;&amp; dpkg-reconfigure openssh-server&quot; \
+-d k8s-worker02
+~]# virt-sysprep  --operations defaults,machine-id,-ssh-userdir,-lvm-uuids \
+--hostname k8s-worker03 \
+--run-command &quot;sed -i 's@192.168.122.7@192.168.122.23@g' /etc/netplan/00-installer-config.yaml &amp;&amp; dpkg-reconfigure openssh-server&quot; \
+-d k8s-worker03
+</code></pre>
+<h3 id="13">1.3. 启动虚拟机<a class="headerlink" href="#13" title="Permanent link">&para;</a></h3>
+<pre><code>~]# virsh start k8s-master01
+~]# virsh start k8s-worker01
+~]# virsh start k8s-worker02
+~]# virsh start k8s-worker03
+</code></pre>
+<h2 id="_2">二、安装集群<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<h3 id="21">2.1 主机名解析<a class="headerlink" href="#21" title="Permanent link">&para;</a></h3>
+<pre><code>~# cat  &gt;&gt; /etc/hosts &lt;&lt;EOF
+192.168.122.11 k8s-master01 k8s-master01.linux.io
+192.168.122.21 k8s-worker01 k8s-worker01.linux.io
+192.168.122.22 k8s-worker02 k8s-worker02.linux.io
+192.168.122.23 k8s-worker03 k8s-worker03.linux.io
+
+192.168.122.11 k8s.linux.io
+EOF
+</code></pre>
+<h3 id="22-docker">2.2 安装DOCKER<a class="headerlink" href="#22-docker" title="Permanent link">&para;</a></h3>
+<ul>
+<li>配置 apt 源</li>
+</ul>
+<pre><code># 安装必要的一些系统工具
+sudo apt-get remove docker docker-engine docker.io
+sudo apt-get install apt-transport-https ca-certificates curl gnupg2 software-properties-common -y
+# 导入信任Docker的GPG公钥
+curl -fsSL https://mirrors.huaweicloud.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
+# 添加软件仓库
+sudo add-apt-repository &quot;deb [arch=amd64] https://mirrors.huaweicloud.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable&quot;
+</code></pre>
+<ul>
+<li>安装docker</li>
+</ul>
+<pre><code>sudo apt-get update
+sudo apt-cache madison docker-ce
+sudo apt install -y docker-ce=5:20.10.22~3-0~ubuntu-focal
+</code></pre>
+<ul>
+<li>配置docker加速器</li>
+</ul>
+<pre><code>mkdir -pv /etc/docker
+sudo cat &gt; /etc/docker/daemon.json &lt;&lt;-'EOF'
+{
+    &quot;exec-opts&quot;: [&quot;native.cgroupdriver=systemd&quot;],
+    &quot;registry-mirrors&quot;: [
+        &quot;https://docker.rainbond.cc&quot;
+    ]
+
+}
+EOF
+systemctl restart docker
+</code></pre>
+<h3 id="23-cri-dockerd">2.3 安装 cri-dockerd<a class="headerlink" href="#23-cri-dockerd" title="Permanent link">&para;</a></h3>
+<pre><code>wget https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.8/cri-dockerd-0.3.8.amd64.tgz
+tar -xzvf cri-dockerd-0.3.8.amd64.tgz
+sudo install -m 0755 -o root -g root -t /usr/local/bin cri-dockerd/cri-dockerd
+
+wget https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/packaging/systemd/cri-docker.service
+wget https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/packaging/systemd/cri-docker.socket
+
+sudo install cri-docker.service /etc/systemd/system
+sudo install cri-docker.socket /etc/systemd/system
+sudo sed -i -e 's@/usr/bin/cri-dockerd@/usr/local/bin/cri-dockerd@' /etc/systemd/system/cri-docker.service
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now cri-docker.socket
+sudo systemctl start cri-docker.service &amp;&amp; systemctl status cri-docker.service
+</code></pre>
+<h3 id="24-kubeadmkubelet-kubectl">2.4 安装 kubeadm、kubelet 和 kubectl<a class="headerlink" href="#24-kubeadmkubelet-kubectl" title="Permanent link">&para;</a></h3>
+<ul>
+<li>配置kubernetes源</li>
+</ul>
+<pre><code>apt-get update &amp;&amp; apt-get install -y apt-transport-https
+sudo mkdir -m 755 /etc/apt/keyrings
+curl -fsSL https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.28/deb/Release.key |
+    gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo &quot;deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.28/deb/ /&quot; |
+    tee /etc/apt/sources.list.d/kubernetes.list
+apt-get update
+apt-cache madison kubeadm
+
+apt install -y kubeadm=1.28.6-1.1 kubelet=1.28.6-1.1 kubectl=1.28.6-1.1
+</code></pre>
+<h2 id="_3">三、初始化集群<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<h3 id="31">3.1 拉取镜像<a class="headerlink" href="#31" title="Permanent link">&para;</a></h3>
+<pre><code>~]# kubeadm config images pull --image-repository=registry.cn-hangzhou.aliyuncs.com/google_containers \
+--kubernetes-version=1.28.6 \
+--cri-socket=unix:///var/run/cri-dockerd.sock
+
+[config/images] Pulled registry.cn-hangzhou.aliyuncs.com/google_containers/kube-apiserver:v1.28.6
+[config/images] Pulled registry.cn-hangzhou.aliyuncs.com/google_containers/kube-controller-manager:v1.28.6
+[config/images] Pulled registry.cn-hangzhou.aliyuncs.com/google_containers/kube-scheduler:v1.28.6
+[config/images] Pulled registry.cn-hangzhou.aliyuncs.com/google_containers/kube-proxy:v1.28.6
+[config/images] Pulled registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.9
+[config/images] Pulled registry.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.5.10-0
+[config/images] Pulled registry.cn-hangzhou.aliyuncs.com/google_containers/coredns:v1.10.1
+</code></pre>
+<pre><code>cp /etc/systemd/system/cri-docker.service{,.bak}
+sed -i &quot;s@ --container-runtime-endpoint fd:// @ --pod-infra-container-image=registry.aliyuncs.com/google_containers/pause:3.9 --container-runtime-endpoint fd:// @&quot; /etc/systemd/system/cri-docker.service
+
+</code></pre>
+<h3 id="32-master">3.2 初始化 master<a class="headerlink" href="#32-master" title="Permanent link">&para;</a></h3>
+<ul>
+<li>配置cri-docker中初始化容器</li>
+</ul>
+<pre><code>~#vim  /etc/systemd/system/cri-docker.service
+[Unit]
+...
+[Service]
+Type=notify
+#ExecStart=/usr/local/bin/cri-dockerd --container-runtime-endpoint fd://
+ExecStart=/usr/local/bin/cri-dockerd --pod-infra-container-image=registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.9 --container-runtime-endpoint fd://
+
+~# systemctl  daemon-reload &amp;&amp; systemctl  restart  cri-docker.service &amp;&amp; systemctl  status cri-docker.service
+
+for i in k8s-worker01 k8s-worker02 k8s-worker03;do
+    scp  /etc/systemd/system/cri-docker.service root@$i:/etc/systemd/system/cri-docker.service
+    ssh $i &quot;systemctl  daemon-reload &amp;&amp; systemctl  restart  cri-docker.service &amp;&amp; systemctl  status cri-docker.service&quot;
+done
+</code></pre>
+<ul>
+<li>初始化master</li>
+</ul>
+<pre><code># 所有节点需要解析 k8s.linux.io, 此域名用于后续扩展集群为高可用集群
+~]# kubeadm init --kubernetes-version=v1.28.6 \
+    --control-plane-endpoint=k8s.linux.io \
+    --apiserver-advertise-address=0.0.0.0 \
+    --pod-network-cidr=10.244.0.0/16   \
+    --service-cidr=10.96.0.0/12 \
+    --image-repository=registry.cn-hangzhou.aliyuncs.com/google_containers \
+    --ignore-preflight-errors=Swap \
+    --cri-socket=unix:///var/run/cri-dockerd.sock | tee kubeadm-init.log
+...
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+Alternatively, if you are the root user, you can run:
+
+  export KUBECONFIG=/etc/kubernetes/admin.conf
+
+You should now deploy a pod network to the cluster.
+Run &quot;kubectl apply -f [podnetwork].yaml&quot; with one of the options listed at:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+You can now join any number of control-plane nodes by copying certificate authorities
+and service account keys on each node and then running the following as root:
+
+  kubeadm join k8s.linux.io:6443 --token 40zawh.qty5miole7ny5hf8 \
+        --discovery-token-ca-cert-hash sha256:832dd459e1bf101d54f6ff80bec406f468aa9cd4b359c9536c845d696fdc8f21 \
+        --control-plane
+
+Then you can join any number of worker nodes by running the following on each as root:
+
+kubeadm join k8s.linux.io:6443 --token 40zawh.qty5miole7ny5hf8 \
+        --discovery-token-ca-cert-hash sha256:832dd459e1bf101d54f6ff80bec406f468aa9cd4b359c9536c845d696fdc8f21
+</code></pre>
+<ul>
+<li>配置kubectl</li>
+</ul>
+<pre><code>
+~# mkdir -p $HOME/.kube
+~#   sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+~#   sudo chown $(id -u):$(id -g) $HOME/.kube/config
+~# kubectl  get nodes
+NAME           STATUS     ROLES           AGE    VERSION
+k8s-master01   NotReady   control-plane   113s   v1.28.6
+</code></pre>
+<h3 id="32-worker">3.2 加入 Worker<a class="headerlink" href="#32-worker" title="Permanent link">&para;</a></h3>
+<pre><code>kubeadm join k8s.linux.io:6443 --token 40zawh.qty5miole7ny5hf8 \
+        --discovery-token-ca-cert-hash sha256:832dd459e1bf101d54f6ff80bec406f468aa9cd4b359c9536c845d696fdc8f21 \
+        --cri-socket=unix:///var/run/cri-dockerd.sock
+
+~# kubectl  get nodes
+NAME           STATUS     ROLES           AGE     VERSION
+k8s-master01   NotReady   control-plane   9m28s   v1.28.6
+k8s-worker01   NotReady   &lt;none&gt;          2m33s   v1.28.6
+k8s-worker02   NotReady   &lt;none&gt;          2m30s   v1.28.6
+k8s-worker03   NotReady   &lt;none&gt;          2m27s   v1.28.6
+
+~# kubectl  get pod  -A
+NAMESPACE     NAME                                   READY   STATUS    RESTARTS   AGE
+kube-system   coredns-6554b8b87f-k9jxl               0/1     Pending   0          9m17s
+kube-system   coredns-6554b8b87f-tfkv8               0/1     Pending   0          9m17s
+kube-system   etcd-k8s-master01                      1/1     Running   0          9m29s
+kube-system   kube-apiserver-k8s-master01            1/1     Running   0          9m29s
+kube-system   kube-controller-manager-k8s-master01   1/1     Running   0          9m29s
+kube-system   kube-proxy-fk5jk                       1/1     Running   0          2m40s
+kube-system   kube-proxy-hzqdp                       1/1     Running   0          9m17s
+kube-system   kube-proxy-l8grw                       1/1     Running   0          2m43s
+kube-system   kube-proxy-vgn8b                       1/1     Running   0          2m37s
+kube-system   kube-scheduler-k8s-master01            1/1     Running   0          9m29s
+</code></pre>
+<h3 id="33">3.3 安装网络插件<a class="headerlink" href="#33" title="Permanent link">&para;</a></h3>
+<pre><code>~# wget https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+~# grep -C 5 244 kube-flannel.yml
+        }
+      ]
+    }
+  net-conf.json: |
+    {
+      &quot;Network&quot;: &quot;10.244.0.0/16&quot;,
+      &quot;EnableNFTables&quot;: false,
+      &quot;Backend&quot;: {
+        &quot;Type&quot;: &quot;vxlan&quot;
+      }
+    }
+~# grep image kube-flannel.yml
+        image: docker.io/flannel/flannel:v0.26.1
+        image: docker.io/flannel/flannel-cni-plugin:v1.5.1-flannel2
+        image: docker.io/flannel/flannel:v0.26.1
+
+~# kubectl  apply -f kube-flannel.yml
+~# kubectl  get nodes
+NAME           STATUS   ROLES           AGE     VERSION
+k8s-master01   Ready    control-plane   15m     v1.28.6
+k8s-worker01   Ready    &lt;none&gt;          8m40s   v1.28.6
+k8s-worker02   Ready    &lt;none&gt;          8m37s   v1.28.6
+k8s-worker03   Ready    &lt;none&gt;          8m34s   v1.28.6
+~# kubectl  get pod  -A -o wide
+NAMESPACE      NAME                                   READY   STATUS    RESTARTS   AGE     IP               NODE           NOMINATED NODE   READINESS GATES
+kube-flannel   kube-flannel-ds-h8zrm                  1/1     Running   0          102s    192.168.122.21   k8s-worker01   &lt;none&gt;           &lt;none&gt;
+kube-flannel   kube-flannel-ds-l8cgv                  1/1     Running   0          102s    192.168.122.23   k8s-worker03   &lt;none&gt;           &lt;none&gt;
+kube-flannel   kube-flannel-ds-q2nk2                  1/1     Running   0          102s    192.168.122.11   k8s-master01   &lt;none&gt;           &lt;none&gt;
+kube-flannel   kube-flannel-ds-tg7r9                  1/1     Running   0          102s    192.168.122.22   k8s-worker02   &lt;none&gt;           &lt;none&gt;
+kube-system    coredns-6554b8b87f-k9jxl               1/1     Running   0          15m     10.244.0.3       k8s-master01   &lt;none&gt;           &lt;none&gt;
+kube-system    coredns-6554b8b87f-tfkv8               1/1     Running   0          15m     10.244.0.2       k8s-master01   &lt;none&gt;           &lt;none&gt;
+kube-system    etcd-k8s-master01                      1/1     Running   0          15m     192.168.122.11   k8s-master01   &lt;none&gt;           &lt;none&gt;
+kube-system    kube-apiserver-k8s-master01            1/1     Running   0          15m     192.168.122.11   k8s-master01   &lt;none&gt;           &lt;none&gt;
+kube-system    kube-controller-manager-k8s-master01   1/1     Running   0          15m     192.168.122.11   k8s-master01   &lt;none&gt;           &lt;none&gt;
+kube-system    kube-proxy-fk5jk                       1/1     Running   0          8m45s   192.168.122.22   k8s-worker02   &lt;none&gt;           &lt;none&gt;
+kube-system    kube-proxy-hzqdp                       1/1     Running   0          15m     192.168.122.11   k8s-master01   &lt;none&gt;           &lt;none&gt;
+kube-system    kube-proxy-l8grw                       1/1     Running   0          8m48s   192.168.122.21   k8s-worker01   &lt;none&gt;           &lt;none&gt;
+kube-system    kube-proxy-vgn8b                       1/1     Running   0          8m42s   192.168.122.23   k8s-worker03   &lt;none&gt;           &lt;none&gt;
+kube-system    kube-scheduler-k8s-master01            1/1     Running   0          15m     192.168.122.11   k8s-master01   &lt;none&gt;           &lt;none&gt;
+</code></pre>
+<h2 id="_4">四、验证集群<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<h3 id="41">4.1 验证网络<a class="headerlink" href="#41" title="Permanent link">&para;</a></h3>
+<ul>
+<li>创建 Deployment 和 Service 资源</li>
+</ul>
+<pre><code>~# kubectl  create deployment myapp --image=ikubernetes/myapp:v1 --replicas=3
+~# kubectl  get pod -o wide
+NAME                     READY   STATUS    RESTARTS   AGE   IP           NODE           NOMINATED NODE   READINESS GATES
+myapp-5d9c4b4647-7xmkx   1/1     Running   0          31s   10.244.2.2   k8s-worker02   &lt;none&gt;           &lt;none&gt;
+myapp-5d9c4b4647-qrkdl   1/1     Running   0          31s   10.244.1.2   k8s-worker01   &lt;none&gt;           &lt;none&gt;
+myapp-5d9c4b4647-w9lq7   1/1     Running   0          31s   10.244.3.2   k8s-worker03   &lt;none&gt;           &lt;none&gt;
+
+~# kubectl  expose deployment/myapp --type=NodePort --port=80 --target-port=80
+~# kubectl  get svc myapp -o wide
+NAME    TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE   SELECTOR
+myapp   NodePort   10.106.198.16   &lt;none&gt;        80:30940/TCP   25s   app=myapp
+</code></pre>
+<ul>
+<li>通过 Service 或者 NodePort 资源轮询 Pod</li>
+</ul>
+<pre><code>~# for i in `seq 5`;do curl 10.106.198.16/hostname.html;done
+myapp-5d9c4b4647-w9lq7
+myapp-5d9c4b4647-qrkdl
+myapp-5d9c4b4647-qrkdl
+myapp-5d9c4b4647-qrkdl
+myapp-5d9c4b4647-7xmkx
+
+~]# for i in `seq 5`; do curl 192.168.122.11:30940/hostname.html;done
+myapp-5d9c4b4647-w9lq7
+myapp-5d9c4b4647-w9lq7
+myapp-5d9c4b4647-w9lq7
+myapp-5d9c4b4647-qrkdl
+myapp-5d9c4b4647-7xmkx
+
+</code></pre>
+<blockquote>
+<p>注意：Service IP 和 NodePort 仅是网络规则，所以不支持ping， 但是支持telnet</p>
+</blockquote>
+<h3 id="41-dns">4.1 验证DNS<a class="headerlink" href="#41-dns" title="Permanent link">&para;</a></h3>
+<pre><code>~# kubectl  get svc -n kube-system -o wide
+NAME       TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                  AGE   SELECTOR
+kube-dns   ClusterIP   10.96.0.10   &lt;none&gt;        53/UDP,53/TCP,9153/TCP   29m   k8s-app=kube-dns
+
+
+~# kubectl  run busybox --image=busybox:1.28 -- sleep 3600
+~# kubectl  get pod/busybox
+NAME      READY   STATUS    RESTARTS   AGE
+busybox   1/1     Running   0          16s
+
+~# kubectl  exec -it busybox -- nslookup myapp.default.svc.cluster.local
+Server:    10.96.0.10
+Address 1: 10.96.0.10 kube-dns.kube-system.svc.cluster.local
+
+Name:      myapp.default.svc.cluster.local
+Address 1: 10.106.198.16 myapp.default.svc.cluster.local
+</code></pre></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js"></script>
+        <script src="../../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
