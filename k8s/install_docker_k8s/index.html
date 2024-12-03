@@ -46,6 +46,24 @@
 </li>
                                 </ul>
                             </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">运行时</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../cri/docker_proxy/" class="dropdown-item">配置Docker代理</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Python开发</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../python/advance/" class="dropdown-item">Python进阶</a>
+</li>
+                                </ul>
+                            </li>
                         </ul>
 
                     <ul class="nav navbar-nav ms-md-auto">
@@ -60,7 +78,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a rel="next" class="nav-link disabled">
+                                <a rel="next" href="../../cri/docker_proxy/" class="nav-link">
                                     Next <i class="fa fa-arrow-right"></i>
                                 </a>
                             </li>
@@ -85,9 +103,13 @@
     <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
         <ul class="nav flex-column">
             
-            <li class="nav-item" data-bs-level="1"><a href="#kubeadm-kubernete" class="nav-link">Kubeadm 安装 Kubernete</a>
+            <li class="nav-item" data-bs-level="1"><a href="#kubeadm-kubernetes" class="nav-link">Kubeadm 安装 Kubernetes</a>
               <ul class="nav flex-column">
             <li class="nav-item" data-bs-level="2"><a href="#_1" class="nav-link">一、准备虚拟机</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#-ipvs" class="nav-link">- 加载 IPVS 模块</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -103,6 +125,10 @@
               <ul class="nav flex-column">
               </ul>
             </li>
+            <li class="nav-item" data-bs-level="2"><a href="#_5" class="nav-link">五、插件安装</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
               </ul>
             </li>
         </ul>
@@ -110,7 +136,7 @@
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h1 id="kubeadm-kubernete">Kubeadm 安装 Kubernete<a class="headerlink" href="#kubeadm-kubernete" title="Permanent link">&para;</a></h1>
+<h1 id="kubeadm-kubernetes">Kubeadm 安装 Kubernetes<a class="headerlink" href="#kubeadm-kubernetes" title="Permanent link">&para;</a></h1>
 <p>基于 Kubeadm 部署Kubernetes集群。操作系统为 Ubuntu 20.04 LTS，用到的各相关程序版本如下：</p>
 <ul>
 <li>kubernetes: v1.28.6</li>
@@ -226,6 +252,24 @@ br_netfilter
 EOF
 ~# sudo modprobe overlay
 ~# sudo modprobe br_netfilter
+</code></pre>
+<h2 id="-ipvs">- 加载 IPVS 模块<a class="headerlink" href="#-ipvs" title="Permanent link">&para;</a></h2>
+<pre><code class="language-shell">apt install ipvsadm ipset -y
+
+cat &gt; /etc/modules-load.d/ipvs.conf &lt;&lt; &quot;EOF&quot;
+#!/bin/bash
+ipvs_mods_dir=&quot;/usr/lib/modules/$(uname -r)/kernel/net/netfilter/ipvs&quot;
+for i in $(ls $ipvs_mods_dir | grep -o &quot;^[^.]*&quot;); do
+    /sbin/modinfo -F filename $i  &amp;&gt; /dev/null
+    if [ $? -eq 0 ]; then
+        /sbin/modprobe $i
+    fi
+done
+EOF
+
+bash /etc/modules-load.d/ipvs.conf
+
+~#  lsmod | grep -e ip_vs -e nf_conntrack_ipv4
 </code></pre>
 <ul>
 <li>关机</li>
@@ -373,15 +417,12 @@ apt install -y kubeadm=1.28.6-1.1 kubelet=1.28.6-1.1 kubectl=1.28.6-1.1
 [config/images] Pulled registry.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.5.10-0
 [config/images] Pulled registry.cn-hangzhou.aliyuncs.com/google_containers/coredns:v1.10.1
 </code></pre>
-<pre><code>cp /etc/systemd/system/cri-docker.service{,.bak}
-sed -i &quot;s@ --container-runtime-endpoint fd:// @ --pod-infra-container-image=registry.aliyuncs.com/google_containers/pause:3.9 --container-runtime-endpoint fd:// @&quot; /etc/systemd/system/cri-docker.service
-
-</code></pre>
 <h3 id="32-master">3.2 初始化 master<a class="headerlink" href="#32-master" title="Permanent link">&para;</a></h3>
 <ul>
 <li>配置cri-docker中初始化容器</li>
 </ul>
-<pre><code>~#vim  /etc/systemd/system/cri-docker.service
+<pre><code>~# cp /etc/systemd/system/cri-docker.service{,.bak}
+~# vim  /etc/systemd/system/cri-docker.service
 [Unit]
 ...
 [Service]
@@ -473,6 +514,9 @@ kube-system   kube-proxy-vgn8b                       1/1     Running   0        
 kube-system   kube-scheduler-k8s-master01            1/1     Running   0          9m29s
 </code></pre>
 <h3 id="33">3.3 安装网络插件<a class="headerlink" href="#33" title="Permanent link">&para;</a></h3>
+<ul>
+<li>安装</li>
+</ul>
 <pre><code>~# wget https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
 ~# grep -C 5 244 kube-flannel.yml
         }
@@ -514,6 +558,14 @@ kube-system    kube-proxy-hzqdp                       1/1     Running   0       
 kube-system    kube-proxy-l8grw                       1/1     Running   0          8m48s   192.168.122.21   k8s-worker01   &lt;none&gt;           &lt;none&gt;
 kube-system    kube-proxy-vgn8b                       1/1     Running   0          8m42s   192.168.122.23   k8s-worker03   &lt;none&gt;           &lt;none&gt;
 kube-system    kube-scheduler-k8s-master01            1/1     Running   0          15m     192.168.122.11   k8s-master01   &lt;none&gt;           &lt;none&gt;
+</code></pre>
+<ul>
+<li>调整为ipvs模式</li>
+</ul>
+<pre><code class="language-shell">kubectl  edit cm kube-proxy -n kube-system
+    mode: &quot;ipvs&quot; 
+
+kubectl  delete pod -n kube-system -l k8s-app=kube-proxy
 </code></pre>
 <h2 id="_4">四、验证集群<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
 <h3 id="41">4.1 验证网络<a class="headerlink" href="#41" title="Permanent link">&para;</a></h3>
@@ -570,6 +622,45 @@ Address 1: 10.96.0.10 kube-dns.kube-system.svc.cluster.local
 
 Name:      myapp.default.svc.cluster.local
 Address 1: 10.106.198.16 myapp.default.svc.cluster.local
+</code></pre>
+<h2 id="_5">五、插件安装<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
+<h3 id="51-metrics-server">5.1 Metrics-Server<a class="headerlink" href="#51-metrics-server" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>官网： <code>https://github.com/kubernetes-sigs/metrics-server</code></p>
+</blockquote>
+<pre><code class="language-shell">~# wget https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+~# vim components.yaml
+    spec:
+      containers:
+      - args:
+        - --cert-dir=/tmp
+        - --secure-port=10250
+        - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+        - --kubelet-use-node-status-port
+        - --metric-resolution=15s
+        - --kubelet-insecure-tls
+
+~# kubectl  apply -f components.yaml 
+</code></pre>
+<pre><code class="language-shell">~# kubectl  top nodes 
+NAME           CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+k8s-master01   189m         4%     1766Mi          22%       
+k8s-worker01   61m          1%     964Mi           12%       
+k8s-worker02   59m          1%     913Mi           11%       
+k8s-worker03   61m          1%     937Mi           12%       
+~# kubectl  top pods
+NAME                     CPU(cores)   MEMORY(bytes)   
+busybox                  0m           1Mi             
+myapp-5d9c4b4647-4t4sp   0m           2Mi             
+myapp-5d9c4b4647-fb4kh   0m           2Mi             
+myapp-5d9c4b4647-zgqtw   0m           2Mi 
+</code></pre>
+<h3 id="52-dashboard">5.2 Dashboard<a class="headerlink" href="#52-dashboard" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>官网：<code>https://github.com/kubernetes/dashboard</code></p>
+</blockquote>
+<p>从 7.0.0 版开始，我们已不再支持基于 Manifest 的安装。目前仅支持基于 Helm 的安装。</p>
+<pre><code class="language-shell">
 </code></pre></div>
             </div>
         </div>
