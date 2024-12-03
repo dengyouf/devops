@@ -1,17 +1,46 @@
-# Welcome to MkDocs
+# 文档搭建
+## 安装
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+```shell
+pip install mkdocs
+```
 
-## Commands
+## 创建项目
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+```shell
+mkdocs new  .
+```
+- mkdocs.yml: 配置文件
+- docs: 文档源文件
 
-## Project layout
+## 启动服务
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+```shell
+mkdocs serve
+```
+
+## 添加文章
+
+- 创建导航
+```shell
+nav:
+    - 主页: 'index.md'
+    - '云原生':
+        - '基于kubeadm安装kubernetes集群': 'k8s/.md'
+```
+
+```shell
+
+```
+
+# 建立网站
+
+```shell
+ mkdocs build 
+```
+
+# 部署文档
+
+```shell
+mkdocs gh-deploy
+```

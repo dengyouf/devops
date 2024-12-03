@@ -1,9 +1,20 @@
-site_name: DEVOPS
-
+site_name: 运维文档
+site_url: https://dengyouf.github.io/devops/
+repo_url: https://github.com/dengyouf/devops/
 nav:
-    - Home: index.md
-    - About: about.md
-#theme:
-#  name: material
-#  language: zh
-#  highlightjs: true
+    - 主页: 'index.md'
+    - '云原生':
+        - '基于kubeadm安装kubernetes集群': 'k8s/install_docker_k8s.md'
+theme:
+    name: mkdocs
+    highlightjs: true
+    shortcuts:
+        help: 191    # ?
+        next: 78     # n
+        previous: 80 # p
+        search: 83   # s
+
+markdown_extensions:
+    toc:
+        permalink: true
+    admonition: {}
