@@ -164,13 +164,20 @@ EOF
 
 - 配置 apt 源
 ```
-# 安装必要的一些系统工具
-sudo apt-get remove docker docker-engine docker.io
-sudo apt-get install apt-transport-https ca-certificates curl gnupg2 software-properties-common -y
-# 导入信任Docker的GPG公钥
-curl -fsSL https://mirrors.huaweicloud.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
-# 添加软件仓库
-sudo add-apt-repository "deb [arch=amd64] https://mirrors.huaweicloud.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+# step 1: 安装必要的一些系统工具
+sudo apt-get update
+sudo apt-get install ca-certificates curl gnupg
+
+# step 2: 信任 Docker 的 GPG 公钥
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+# Step 3: 写入软件源信息
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://mirrors.aliyun.com/docker-ce/linux/ubuntu \
+  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 ```
 
 - 安装docker
