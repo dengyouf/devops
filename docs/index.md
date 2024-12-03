@@ -26,11 +26,7 @@ mkdocs serve
 nav:
     - 主页: 'index.md'
     - '云原生':
-        - '基于kubeadm安装kubernetes集群': 'k8s/.md'
-```
-
-```shell
-
+        - '基于kubeadm安装kubernetes集群': 'k8s/install_docker_k8s.md'
 ```
 
 # 建立网站
