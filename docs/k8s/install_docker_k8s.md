@@ -1,4 +1,4 @@
-# Kubeadm 安装 Kubernete
+# Kubeadm 安装 Kubernetes
 
 基于 Kubeadm 部署Kubernetes集群。操作系统为 Ubuntu 20.04 LTS，用到的各相关程序版本如下：
 
@@ -94,6 +94,27 @@ EOF
 ~# sudo modprobe overlay
 ~# sudo modprobe br_netfilter
 ```
+- 加载 IPVS 模块
+- 
+```shell
+apt install ipvsadm ipset -y
+
+cat > /etc/modules-load.d/ipvs.conf << "EOF"
+#!/bin/bash
+ipvs_mods_dir="/usr/lib/modules/$(uname -r)/kernel/net/netfilter/ipvs"
+for i in $(ls $ipvs_mods_dir | grep -o "^[^.]*"); do
+    /sbin/modinfo -F filename $i  &> /dev/null
+    if [ $? -eq 0 ]; then
+        /sbin/modprobe $i
+    fi
+done
+EOF
+
+bash /etc/modules-load.d/ipvs.conf
+
+~#  lsmod | grep -e ip_vs -e nf_conntrack_ipv4
+```
+
 - 关机
 ```
 ~# init 0
@@ -253,11 +274,6 @@ apt install -y kubeadm=1.28.6-1.1 kubelet=1.28.6-1.1 kubectl=1.28.6-1.1
 [config/images] Pulled registry.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.5.10-0
 [config/images] Pulled registry.cn-hangzhou.aliyuncs.com/google_containers/coredns:v1.10.1
 ```
-```
-cp /etc/systemd/system/cri-docker.service{,.bak}
-sed -i "s@ --container-runtime-endpoint fd:// @ --pod-infra-container-image=registry.aliyuncs.com/google_containers/pause:3.9 --container-runtime-endpoint fd:// @" /etc/systemd/system/cri-docker.service
-  
-```
 
 ### 3.2 初始化 master
 
@@ -265,7 +281,8 @@ sed -i "s@ --container-runtime-endpoint fd:// @ --pod-infra-container-image=regi
 
 
 ```
-~#vim  /etc/systemd/system/cri-docker.service
+~# cp /etc/systemd/system/cri-docker.service{,.bak}
+~# vim  /etc/systemd/system/cri-docker.service
 [Unit]
 ...
 [Service]
@@ -362,6 +379,8 @@ kube-system   kube-scheduler-k8s-master01            1/1     Running   0        
 
 ### 3.3 安装网络插件
 
+- 安装
+
 ```
 ~# wget https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
 ~# grep -C 5 244 kube-flannel.yml
@@ -404,6 +423,15 @@ kube-system    kube-proxy-hzqdp                       1/1     Running   0       
 kube-system    kube-proxy-l8grw                       1/1     Running   0          8m48s   192.168.122.21   k8s-worker01   <none>           <none>
 kube-system    kube-proxy-vgn8b                       1/1     Running   0          8m42s   192.168.122.23   k8s-worker03   <none>           <none>
 kube-system    kube-scheduler-k8s-master01            1/1     Running   0          15m     192.168.122.11   k8s-master01   <none>           <none>
+```
+
+- 调整为ipvs模式
+
+```shell
+kubectl  edit cm kube-proxy -n kube-system
+    mode: "ipvs" 
+
+kubectl  delete pod -n kube-system -l k8s-app=kube-proxy
 ```
 
 ## 四、验证集群
@@ -464,4 +492,50 @@ Address 1: 10.96.0.10 kube-dns.kube-system.svc.cluster.local
 
 Name:      myapp.default.svc.cluster.local
 Address 1: 10.106.198.16 myapp.default.svc.cluster.local
+```
+
+## 五、插件安装
+
+### 5.1 Metrics-Server
+
+> 官网： `https://github.com/kubernetes-sigs/metrics-server`
+
+```shell
+~# wget https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+~# vim components.yaml
+    spec:
+      containers:
+      - args:
+        - --cert-dir=/tmp
+        - --secure-port=10250
+        - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+        - --kubelet-use-node-status-port
+        - --metric-resolution=15s
+        - --kubelet-insecure-tls
+   
+~# kubectl  apply -f components.yaml 
+```
+```shell
+~# kubectl  top nodes 
+NAME           CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+k8s-master01   189m         4%     1766Mi          22%       
+k8s-worker01   61m          1%     964Mi           12%       
+k8s-worker02   59m          1%     913Mi           11%       
+k8s-worker03   61m          1%     937Mi           12%       
+~# kubectl  top pods
+NAME                     CPU(cores)   MEMORY(bytes)   
+busybox                  0m           1Mi             
+myapp-5d9c4b4647-4t4sp   0m           2Mi             
+myapp-5d9c4b4647-fb4kh   0m           2Mi             
+myapp-5d9c4b4647-zgqtw   0m           2Mi 
+```
+
+### 5.2 Dashboard
+
+> 官网：`https://github.com/kubernetes/dashboard`
+
+从 7.0.0 版开始，我们已不再支持基于 Manifest 的安装。目前仅支持基于 Helm 的安装。
+
+```shell
+
 ```
