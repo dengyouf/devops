@@ -29,13 +29,13 @@ nav:
         - '基于kubeadm安装kubernetes集群': 'k8s/install_docker_k8s.md'
 ```
 
-# 建立网站
+## 建立网站
 
 ```shell
  mkdocs build 
 ```
 
-# 部署文档
+## 部署文档
 
 ```shell
 mkdocs gh-deploy
