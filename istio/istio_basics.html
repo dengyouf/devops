@@ -53,6 +53,10 @@
 <li>
     <a href="istio_basics.html" class="dropdown-item active" aria-current="page">Istio架构概述</a>
 </li>
+                                    
+<li>
+    <a href="traffic.html" class="dropdown-item">Istio流量治理</a>
+</li>
                                 </ul>
                             </li>
                             <li class="nav-item dropdown">
@@ -87,7 +91,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a rel="next" href="../cri/docker_proxy.html" class="nav-link">
+                                <a rel="next" href="traffic.html" class="nav-link">
                                     Next <i class="fa fa-arrow-right"></i>
                                 </a>
                             </li>
@@ -126,7 +130,7 @@
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-bs-level="2"><a href="#_1" class="nav-link">流量治理</a>
+            <li class="nav-item" data-bs-level="2"><a href="#kiali" class="nav-link">开放Kiali到集群外部</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -446,7 +450,105 @@ istio-ingressgateway.istio-system.svc.cluster.local     80       -          outb
 myapp.default.svc.cluster.local                         80       -          outbound      EDS      
 tracing.istio-system.svc.cluster.local                  80       -          outbound      EDS  
 </code></pre>
-<h2 id="_1">流量治理<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2></div>
+<h2 id="kiali">开放Kiali到集群外部<a class="headerlink" href="#kiali" title="Permanent link">&para;</a></h2>
+<pre><code class="language-shell">~# kubectl  get svc/kiali  -n istio-system
+NAME    TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)              AGE
+kiali   ClusterIP   10.110.75.11   &lt;none&gt;        20001/TCP,9090/TCP   3h18m
+~# kubectl  get pod  -n istio-system|grep kiali
+kiali-c9d6f75d5-p6tm5                   1/1     Running   0          3h19m
+</code></pre>
+<h3 id="externalip-istio-ingressgateway">ExternalIP 的方式暴漏 istio-ingressgateway<a class="headerlink" href="#externalip-istio-ingressgateway" title="Permanent link">&para;</a></h3>
+<ul>
+<li>在集群内某一网卡上添加额外的地址用来提供External IP</li>
+</ul>
+<pre><code class="language-shell">~# cat /etc/netplan/00-installer-config.yaml
+# This is the network config written by 'subiquity'
+network:
+  ethernets:
+    eth0:
+      addresses:
+      - 172.16.192.31/16
+      - 172.16.192.100/16
+      gateway4: 172.16.192.2
+      nameservers:
+        addresses:
+        - 223.5.5.5
+        search: []
+  version: 2
+ ```
+- 配置ExternalIP到 IngressGateway
+```shell
+~# kubectl edit svc/istio-ingressgateway -n istio-system
+...
+  externalTrafficPolicy: Cluster
+  externalIPs:
+  - 172.16.192.100
+~# kubectl get  svc/istio-ingressgateway -n istio-system
+NAME                   TYPE           CLUSTER-IP     EXTERNAL-IP      PORT(S)                                                                      AGE
+istio-ingressgateway   LoadBalancer   10.106.26.93   172.16.192.100   15021:32234/TCP,80:30135/TCP,443:30693/TCP,31400:32617/TCP,15443:30032/TCP   4h17m
+</code></pre>
+<h3 id="gateway">定义Gateway<a class="headerlink" href="#gateway" title="Permanent link">&para;</a></h3>
+<pre><code class="language-shell">cat  &gt; kiali-gateway.yaml &lt;&lt; EOF
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: kiali-gateway
+  namespace: istio-system
+spec:
+  selector:
+    app: istio-ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http-kiali
+      protocol: HTTP
+    hosts:
+    - &quot;kiali.linux.com&quot;
+EOF
+</code></pre>
+<h3 id="virtualservice">定义VirtualService<a class="headerlink" href="#virtualservice" title="Permanent link">&para;</a></h3>
+<pre><code class="language-shell">cat  &gt; kiali-virtualservice.yaml &lt;&lt; EOF
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: kiali-virtualservice
+  namespace: istio-system
+spec:
+  hosts:
+  - &quot;kiali.linux.com&quot;
+  gateways:
+  - kiali-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: kiali
+        port:
+          number: 20001
+EOF
+</code></pre>
+<h3 id="destinationrule">定义DestinationRule<a class="headerlink" href="#destinationrule" title="Permanent link">&para;</a></h3>
+<pre><code class="language-shell">cat  &gt; kiali-destinationrule.yaml &lt;&lt; EOF
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: kiali
+  namespace: istio-system
+spec:
+  host: kiali
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+EOF
+</code></pre>
+<h3 id="_1">访问<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
+<p>添加hosts解析如下</p>
+<pre><code class="language-shell">172.26.192.100  kiali.linux.io
+</code></pre></div>
             </div>
         </div>
 

@@ -6,9 +6,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         
-        <link rel="canonical" href="https://dengyouf.github.io/devops/python/advance.html">
+        <link rel="canonical" href="https://dengyouf.github.io/devops/istio/traffic.html">
         <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>Python进阶 - 运维文档</title>
+        <title>Istio流量治理 - 运维文档</title>
         <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/fontawesome.min.css" rel="stylesheet">
         <link href="../css/brands.min.css" rel="stylesheet">
@@ -47,15 +47,15 @@
                                 </ul>
                             </li>
                             <li class="nav-item dropdown">
-                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">服务网格</a>
+                                <a href="#" class="nav-link dropdown-toggle active" aria-current="page" role="button" data-bs-toggle="dropdown"  aria-expanded="false">服务网格</a>
                                 <ul class="dropdown-menu">
                                     
 <li>
-    <a href="../istio/istio_basics.html" class="dropdown-item">Istio架构概述</a>
+    <a href="istio_basics.html" class="dropdown-item">Istio架构概述</a>
 </li>
                                     
 <li>
-    <a href="../istio/traffic.html" class="dropdown-item">Istio流量治理</a>
+    <a href="traffic.html" class="dropdown-item active" aria-current="page">Istio流量治理</a>
 </li>
                                 </ul>
                             </li>
@@ -69,11 +69,11 @@
                                 </ul>
                             </li>
                             <li class="nav-item dropdown">
-                                <a href="#" class="nav-link dropdown-toggle active" aria-current="page" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Python开发</a>
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Python开发</a>
                                 <ul class="dropdown-menu">
                                     
 <li>
-    <a href="advance.html" class="dropdown-item active" aria-current="page">Python进阶</a>
+    <a href="../python/advance.html" class="dropdown-item">Python进阶</a>
 </li>
                                 </ul>
                             </li>
@@ -86,17 +86,17 @@
                             </a>
                         </li>
                             <li class="nav-item">
-                                <a rel="prev" href="../cri/docker_proxy.html" class="nav-link">
+                                <a rel="prev" href="istio_basics.html" class="nav-link">
                                     <i class="fa fa-arrow-left"></i> Previous
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a rel="next" class="nav-link disabled">
+                                <a rel="next" href="../cri/docker_proxy.html" class="nav-link">
                                     Next <i class="fa fa-arrow-right"></i>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="https://github.com/dengyouf/devops/edit/master/docs/python/advance.md" class="nav-link"><i class="fa-brands fa-github"></i> Edit on GitHub</a>
+                                <a href="https://github.com/dengyouf/devops/edit/master/docs/istio/traffic.md" class="nav-link"><i class="fa-brands fa-github"></i> Edit on GitHub</a>
                             </li>
                     </ul>
                 </div>
@@ -116,12 +116,8 @@
     <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
         <ul class="nav flex-column">
             
-            <li class="nav-item" data-bs-level="1"><a href="#python" class="nav-link">Python进阶</a>
+            <li class="nav-item" data-bs-level="2"><a href="#_1" class="nav-link">流量治理</a>
               <ul class="nav flex-column">
-            <li class="nav-item" data-bs-level="2"><a href="#_1" class="nav-link">数据结构</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
               </ul>
             </li>
         </ul>
@@ -129,8 +125,69 @@
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h1 id="python">Python进阶<a class="headerlink" href="#python" title="Permanent link">&para;</a></h1>
-<h2 id="_1">数据结构<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2></div>
+<h2 id="_1">流量治理<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<h3 id="_2">核心概念<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<p>Istio的流量路由规则使运维人员可以轻松控制服务之间的流量和API调用，所有路由规则和控制策略都基于Kubernetes CRD实现，这包括网络
+功能相关的VirtualService、DestinationRule、Gateway、ServiceEntry和 EnvoyFilter等；</p>
+<p><img alt="img_5.png" src="img_5.png" /></p>
+<table>
+<thead>
+<tr>
+<th>CRD</th>
+<th></th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gateway</td>
+<td>Ingress Gateway</td>
+<td>定义一个负载均衡器, 用于承载网络边缘流量的进入和发出</td>
+</tr>
+<tr>
+<td></td>
+<td>Egress Gateway</td>
+<td></td>
+</tr>
+<tr>
+<td>ServiceEntry</td>
+<td></td>
+<td>注册路由表， 让网格中能自动发现和访问手动添加的服务</td>
+</tr>
+<tr>
+<td>VirtualService</td>
+<td></td>
+<td>定于指定服务器的流量路由规则 ，将处理后的流量路由到指定的目的地Destination</td>
+</tr>
+<tr>
+<td>DestinationRule</td>
+<td></td>
+<td>决定经过路由处理后的流量的访问策略</td>
+</tr>
+<tr>
+<td>EnvoyFilter</td>
+<td></td>
+<td>使用filter 为特定的envoy 添加配置</td>
+</tr>
+</tbody>
+</table>
+<p>集群外部的入站流量会经由 Ingress Gateway 到达集群内部：</p>
+<ul>
+<li>
+<p>由Gateway定义ingress Gateway上的虚拟主机，虚拟主机信息如下，</p>
+<ul>
+<li>hosts：流量要访问的主机名</li>
+<li>port：监听端口</li>
+</ul>
+</li>
+<li>
+<p>集群内部的流量会在 Sidercar之间流动</p>
+<ul>
+<li>VirtualService 为Sidercar Envory 定义 listener，主要定义流量的路由机制</li>
+<li>DestinationRule 为 Sidercar Envory 定义Cluster， 包括端点发现机制</li>
+</ul>
+</li>
+</ul></div>
             </div>
         </div>
 
