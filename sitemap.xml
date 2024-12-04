@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://dengyouf.github.io/devops/</loc>
+         <loc>https://dengyouf.github.io/devops/index.html</loc>
          <lastmod>2024-12-04</lastmod>
     </url>
     <url>
-         <loc>https://dengyouf.github.io/devops/cri/docker_proxy/</loc>
+         <loc>https://dengyouf.github.io/devops/cri/docker_proxy.html</loc>
          <lastmod>2024-12-04</lastmod>
     </url>
     <url>
-         <loc>https://dengyouf.github.io/devops/k8s/helm_pkg_manager/</loc>
+         <loc>https://dengyouf.github.io/devops/k8s/helm_pkg_manager.html</loc>
          <lastmod>2024-12-04</lastmod>
     </url>
     <url>
-         <loc>https://dengyouf.github.io/devops/k8s/install_docker_k8s/</loc>
+         <loc>https://dengyouf.github.io/devops/k8s/install_docker_k8s.html</loc>
          <lastmod>2024-12-04</lastmod>
     </url>
     <url>
-         <loc>https://dengyouf.github.io/devops/python/advance/</loc>
+         <loc>https://dengyouf.github.io/devops/python/advance.html</loc>
          <lastmod>2024-12-04</lastmod>
     </url>
 </urlset>
