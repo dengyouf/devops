@@ -203,7 +203,120 @@ myapp.default.svc.cluster.local                         80       -          outb
 tracing.istio-system.svc.cluster.local                  80       -          outbound      EDS  
 ```
 
-## 流量治理
+## 开放Kiali到集群外部
 
+```shell
+~# kubectl  get svc/kiali  -n istio-system
+NAME    TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)              AGE
+kiali   ClusterIP   10.110.75.11   <none>        20001/TCP,9090/TCP   3h18m
+~# kubectl  get pod  -n istio-system|grep kiali
+kiali-c9d6f75d5-p6tm5                   1/1     Running   0          3h19m
+```
+
+### ExternalIP 的方式暴漏 istio-ingressgateway
+
+- 在集群内某一网卡上添加额外的地址用来提供External IP
+```shell
+~# cat /etc/netplan/00-installer-config.yaml
+# This is the network config written by 'subiquity'
+network:
+  ethernets:
+    eth0:
+      addresses:
+      - 172.16.192.31/16
+      - 172.16.192.100/16
+      gateway4: 172.16.192.2
+      nameservers:
+        addresses:
+        - 223.5.5.5
+        search: []
+  version: 2
+ ```
+- 配置ExternalIP到 IngressGateway
+```shell
+~# kubectl edit svc/istio-ingressgateway -n istio-system
+...
+  externalTrafficPolicy: Cluster
+  externalIPs:
+  - 172.16.192.100
+~# kubectl get  svc/istio-ingressgateway -n istio-system
+NAME                   TYPE           CLUSTER-IP     EXTERNAL-IP      PORT(S)                                                                      AGE
+istio-ingressgateway   LoadBalancer   10.106.26.93   172.16.192.100   15021:32234/TCP,80:30135/TCP,443:30693/TCP,31400:32617/TCP,15443:30032/TCP   4h17m
+```
+
+### 定义Gateway
+
+```shell
+cat  > kiali-gateway.yaml << EOF
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: kiali-gateway
+  namespace: istio-system
+spec:
+  selector:
+    app: istio-ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http-kiali
+      protocol: HTTP
+    hosts:
+    - "kiali.linux.com"
+EOF
+```
+
+### 定义VirtualService
+
+```shell
+cat  > kiali-virtualservice.yaml << EOF
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: kiali-virtualservice
+  namespace: istio-system
+spec:
+  hosts:
+  - "kiali.linux.com"
+  gateways:
+  - kiali-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: kiali
+        port:
+          number: 20001
+EOF
+```
+
+### 定义DestinationRule
+
+```shell
+cat  > kiali-destinationrule.yaml << EOF
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: kiali
+  namespace: istio-system
+spec:
+  host: kiali
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+EOF
+```
+
+### 访问
+
+添加hosts解析如下
+
+```shell
+172.26.192.100  kiali.linux.io
+```
 
 
