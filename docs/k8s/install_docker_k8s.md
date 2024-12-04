@@ -576,4 +576,4 @@ kubectl -n kubernetes-dashboard create token admin-user
 
 如果google不允许访问https，请在访问页面输入 `thisisunsafe` 解决
 
-![](img/k8s-dash.png')
+<img src="https://dengyouf.github.io/devops/img/k8s-dash.png">

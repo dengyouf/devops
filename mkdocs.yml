@@ -5,6 +5,8 @@ nav:
     - 主页: 'index.md'
     - '云原生':
         - '基于kubeadm安装kubernetes集群': 'k8s/install_docker_k8s.md'
+    - '服务网格':
+          - 'Istio架构概述': 'istio/istio_basics.md'
     - '运行时':
           - '配置Docker代理':  'cri/docker_proxy.md'
     - 'Python开发':
