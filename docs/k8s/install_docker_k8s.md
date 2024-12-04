@@ -568,10 +568,12 @@ subjects:
   namespace: kubernetes-dashboard
  
 kubectl apply -f admin-user.yaml
+
+kubectl -n kubernetes-dashboard create token admin-user
 ```
 
 - 访问
 
 如果google不允许访问https，请在访问页面输入 `thisisunsafe` 解决
 
-[](img/k8s-dash.png')
+![](img/k8s-dash.png')
