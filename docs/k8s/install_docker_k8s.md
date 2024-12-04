@@ -534,8 +534,44 @@ myapp-5d9c4b4647-zgqtw   0m           2Mi
 
 > 官网：`https://github.com/kubernetes/dashboard`
 
-从 7.0.0 版开始，我们已不再支持基于 Manifest 的安装。目前仅支持基于 Helm 的安装。
-
+- 部署 dashboard
 ```shell
-
+wget https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0/aio/deploy/recommended.yaml
+kubectl  apply -f recommended.yaml 
+kubectl  patch -n kubernetes-dashboard svc/kubernetes-dashboard -p '{"spec": {"type": "NodePort"}}'
+# kubectl  get svc -n kubernetes-dashboard
+NAME                        TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)         AGE
+dashboard-metrics-scraper   ClusterIP   10.104.44.78     <none>        8000/TCP        17m
+kubernetes-dashboard        NodePort    10.104.155.213   <none>        443:30106/TCP   17m
 ```
+- 创建用户
+```shell
+cat admin-user.yaml 
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: kubernetes-dashboard
+ 
+kubectl apply -f admin-user.yaml
+```
+
+- 访问
+
+如果google不允许访问https，请在访问页面输入 `thisisunsafe` 解决
+
+[](./img/img.png)
