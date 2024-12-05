@@ -221,10 +221,12 @@ kiali-c9d6f75d5-p6tm5                   1/1     Running   0          3h19m
 # This is the network config written by 'subiquity'
 network:
   ethernets:
+    eth1:
+      addresses:
+      - 172.16.192.100/16
     eth0:
       addresses:
       - 172.16.192.31/16
-      - 172.16.192.100/16
       gateway4: 172.16.192.2
       nameservers:
         addresses:
@@ -263,8 +265,17 @@ spec:
       name: http-kiali
       protocol: HTTP
     hosts:
-    - "kiali.linux.com"
+    - "kiali.linux.io"
 EOF
+
+kubectl apply -f  kiali-gateway.yaml
+
+# ⚠️  对80端口自动转换成8080端口
+~# istioctl proxy-config route $(kubectl  get pods -l app=istio-ingressgateway -n istio-system -o jsonpath={.items[0].metadata.name}) -n istio-system
+NAME          DOMAINS            MATCH                  VIRTUAL SERVICE
+http.8080     kiali.linux.io     /*                     kiali-virtualservice.istio-system
+              *                  /healthz/ready*        
+              *                  /stats/prometheus*  
 ```
 
 ### 定义VirtualService
@@ -279,7 +290,7 @@ metadata:
   namespace: istio-system
 spec:
   hosts:
-  - "kiali.linux.com"
+  - "kiali.linux.io"
   gateways:
   - kiali-gateway
   http:
@@ -292,9 +303,16 @@ spec:
         port:
           number: 20001
 EOF
+
+kubectl apply -f  kiali-virtualservice.yaml 
+#  如果不定义 destinationrule， DESTINATION RULE为空
+~# istioctl proxy-config cluster $(kubectl  get pods -l app=istio-ingressgateway -n istio-system -o jsonpath={.items[0].metadata.name}) -n istio-system|grep 20001
+kiali.istio-system.svc.cluster.local                    20001     -          outbound      EDS 
 ```
 
 ### 定义DestinationRule
+
+可选
 
 ```shell
 cat  > kiali-destinationrule.yaml << EOF
@@ -309,6 +327,21 @@ spec:
     tls:
       mode: DISABLE
 EOF
+kubectl apply -f kiali-destinationrule.yaml
+# 定义destinationrule， DESTINATION RULE不为空
+~# istioctl proxy-config cluster $(kubectl  get pods -l app=istio-ingressgateway -n istio-system -o jsonpath={.items[0].metadata.name}) -n istio-system|grep 20001
+kiali.istio-system.svc.cluster.local                    20001     -          outbound      EDS            kiali.istio-system
+```
+```shell
+~# kubectl  get vs -n istio-system
+NAME                   GATEWAYS            HOSTS                AGE
+kiali-virtualservice   ["kiali-gateway"]   ["kiali.linux.io"]   38m
+root@k8s-master01:~# kubectl  get dr -n istio-system
+NAME    HOST    AGE
+kiali   kiali   3m11s
+root@k8s-master01:~# kubectl  get gateway -n istio-system
+NAME            AGE
+kiali-gateway   40m
 ```
 
 ### 访问
@@ -318,5 +351,6 @@ EOF
 ```shell
 172.26.192.100  kiali.linux.io
 ```
+![img_7.png](img_7.png)
 
 
