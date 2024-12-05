@@ -465,10 +465,12 @@ kiali-c9d6f75d5-p6tm5                   1/1     Running   0          3h19m
 # This is the network config written by 'subiquity'
 network:
   ethernets:
+    eth1:
+      addresses:
+      - 172.16.192.100/16
     eth0:
       addresses:
       - 172.16.192.31/16
-      - 172.16.192.100/16
       gateway4: 172.16.192.2
       nameservers:
         addresses:
@@ -504,8 +506,17 @@ spec:
       name: http-kiali
       protocol: HTTP
     hosts:
-    - &quot;kiali.linux.com&quot;
+    - &quot;kiali.linux.io&quot;
 EOF
+
+kubectl apply -f  kiali-gateway.yaml
+
+# ⚠️  对80端口自动转换成8080端口
+~# istioctl proxy-config route $(kubectl  get pods -l app=istio-ingressgateway -n istio-system -o jsonpath={.items[0].metadata.name}) -n istio-system
+NAME          DOMAINS            MATCH                  VIRTUAL SERVICE
+http.8080     kiali.linux.io     /*                     kiali-virtualservice.istio-system
+              *                  /healthz/ready*        
+              *                  /stats/prometheus*  
 </code></pre>
 <h3 id="virtualservice">定义VirtualService<a class="headerlink" href="#virtualservice" title="Permanent link">&para;</a></h3>
 <pre><code class="language-shell">cat  &gt; kiali-virtualservice.yaml &lt;&lt; EOF
@@ -517,7 +528,7 @@ metadata:
   namespace: istio-system
 spec:
   hosts:
-  - &quot;kiali.linux.com&quot;
+  - &quot;kiali.linux.io&quot;
   gateways:
   - kiali-gateway
   http:
@@ -530,8 +541,14 @@ spec:
         port:
           number: 20001
 EOF
+
+kubectl apply -f  kiali-virtualservice.yaml 
+#  如果不定义 destinationrule， DESTINATION RULE为空
+~# istioctl proxy-config cluster $(kubectl  get pods -l app=istio-ingressgateway -n istio-system -o jsonpath={.items[0].metadata.name}) -n istio-system|grep 20001
+kiali.istio-system.svc.cluster.local                    20001     -          outbound      EDS 
 </code></pre>
 <h3 id="destinationrule">定义DestinationRule<a class="headerlink" href="#destinationrule" title="Permanent link">&para;</a></h3>
+<p>可选</p>
 <pre><code class="language-shell">cat  &gt; kiali-destinationrule.yaml &lt;&lt; EOF
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
@@ -544,11 +561,26 @@ spec:
     tls:
       mode: DISABLE
 EOF
+kubectl apply -f kiali-destinationrule.yaml
+# 定义destinationrule， DESTINATION RULE不为空
+~# istioctl proxy-config cluster $(kubectl  get pods -l app=istio-ingressgateway -n istio-system -o jsonpath={.items[0].metadata.name}) -n istio-system|grep 20001
+kiali.istio-system.svc.cluster.local                    20001     -          outbound      EDS            kiali.istio-system
+</code></pre>
+<pre><code class="language-shell">~# kubectl  get vs -n istio-system
+NAME                   GATEWAYS            HOSTS                AGE
+kiali-virtualservice   [&quot;kiali-gateway&quot;]   [&quot;kiali.linux.io&quot;]   38m
+root@k8s-master01:~# kubectl  get dr -n istio-system
+NAME    HOST    AGE
+kiali   kiali   3m11s
+root@k8s-master01:~# kubectl  get gateway -n istio-system
+NAME            AGE
+kiali-gateway   40m
 </code></pre>
 <h3 id="_1">访问<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
 <p>添加hosts解析如下</p>
 <pre><code class="language-shell">172.26.192.100  kiali.linux.io
-</code></pre></div>
+</code></pre>
+<p><img alt="img_7.png" src="img_7.png" /></p></div>
             </div>
         </div>
 
