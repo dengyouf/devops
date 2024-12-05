@@ -122,6 +122,14 @@
               <ul class="nav flex-column">
               </ul>
             </li>
+            <li class="nav-item" data-bs-level="2"><a href="#_3" class="nav-link">流量治理基础</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#_4" class="nav-link">网格流量治理</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
               </ul>
             </li>
         </ul>
@@ -180,6 +188,8 @@
 </tr>
 </tbody>
 </table>
+<h2 id="_3">流量治理基础<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<p><img alt="img_8.png" src="img_8.png" /></p>
 <p>集群外部的入站流量会经由 Ingress Gateway 到达集群内部：</p>
 <ul>
 <li>
@@ -196,7 +206,10 @@
 <li>DestinationRule 为 Sidercar Envory 定义Cluster， 包括端点发现机制</li>
 </ul>
 </li>
-</ul></div>
+</ul>
+<h2 id="_4">网格流量治理<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<p>在Kubernetes系统上，Istio会将网格重的每个Service的端口一个Listener， Service匹配到的endpoint将组合成为一个Cluster。</p>
+<h3 id="_5"><a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3></div>
             </div>
         </div>
 
