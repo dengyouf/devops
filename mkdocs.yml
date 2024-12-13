@@ -10,8 +10,8 @@ nav:
           - 'Istio流量治理': 'istio/traffic.md'
     - '运行时':
           - '配置Docker代理':  'cri/docker_proxy.md'
-    - 'Python开发':
-        - 'Python进阶':  'python/advance.md'
+    - 'Vue开发':
+        - 'Vue环境搭建':  'vue/env.md'
 theme:
     name: mkdocs
     highlightjs: true
