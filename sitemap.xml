@@ -2,30 +2,34 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://dengyouf.github.io/devops/index.html</loc>
-         <lastmod>2024-12-05</lastmod>
+         <lastmod>2024-12-13</lastmod>
     </url>
     <url>
          <loc>https://dengyouf.github.io/devops/cri/docker_proxy.html</loc>
-         <lastmod>2024-12-05</lastmod>
+         <lastmod>2024-12-13</lastmod>
     </url>
     <url>
          <loc>https://dengyouf.github.io/devops/istio/istio_basics.html</loc>
-         <lastmod>2024-12-05</lastmod>
+         <lastmod>2024-12-13</lastmod>
     </url>
     <url>
          <loc>https://dengyouf.github.io/devops/istio/traffic.html</loc>
-         <lastmod>2024-12-05</lastmod>
+         <lastmod>2024-12-13</lastmod>
     </url>
     <url>
          <loc>https://dengyouf.github.io/devops/k8s/helm_pkg_manager.html</loc>
-         <lastmod>2024-12-05</lastmod>
+         <lastmod>2024-12-13</lastmod>
     </url>
     <url>
          <loc>https://dengyouf.github.io/devops/k8s/install_docker_k8s.html</loc>
-         <lastmod>2024-12-05</lastmod>
+         <lastmod>2024-12-13</lastmod>
     </url>
     <url>
          <loc>https://dengyouf.github.io/devops/python/advance.html</loc>
-         <lastmod>2024-12-05</lastmod>
+         <lastmod>2024-12-13</lastmod>
+    </url>
+    <url>
+         <loc>https://dengyouf.github.io/devops/vue/env.html</loc>
+         <lastmod>2024-12-13</lastmod>
     </url>
 </urlset>
